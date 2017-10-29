@@ -1,6 +1,7 @@
 package dbse.fopj.blinktopus.resources;
-
 import java.util.HashMap;
+import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -116,6 +117,7 @@ public class QueryProcessor {
 	 * @param type The type of a Storage View to be used to answer user's query (Col,Row,AQP).
 	 * @param table The table to be queried (Order/LineItem)
 	 * @param key The key to be queried
+	 * @param fields The fields to be queried
 	 * @return An instance of a class Result that contains information about the query (table, attr, lower, higher),
 	 * information about SV (Id, Type (Col,Row,AQP)), information about result (tuples, size), and
 	 * analytical information (time it took to retrieve the result, and error if necessary).
@@ -125,12 +127,52 @@ public class QueryProcessor {
 	@Timed
 	//@ApiOperation(response=dbse.fopj.blinktopus.api.resultmodel.User.class)
 	public Response readLog(@QueryParam("SVid") String SVId, @QueryParam("type") String type,
-			@QueryParam("table") String table, @QueryParam("key") String key) {
-		User user= LogManager.getLogManager().read(table, key);
-		dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User(user);
-		return Response.ok(result).build();
+			@QueryParam("table") String table, @QueryParam("key") String key, @QueryParam("fields") List<String> fields) {
+		return LogManager.getLogManager().read(table, key, fields, null, null);
 	}
 	
+	/**
+	 * The method that returns relevant tuples and relevant information about the query to the user.
+	 * @param SVId The ID of a Storage View to be used to answer user's query.
+	 * @param type The type of a Storage View to be used to answer user's query (Col,Row,AQP).
+	 * @param table The table to be queried (Order/LineItem)
+	 * @param key The key to be queried
+	 * @param fields The fields to be queried
+	 * @param recordCount The number of records to be scanned
+	 * @return An instance of a class Result that contains information about the query (table, attr, lower, higher),
+	 * information about SV (Id, Type (Col,Row,AQP)), information about result (tuples, size), and
+	 * analytical information (time it took to retrieve the result, and error if necessary).
+	 */
+	@Path("/scanLog")
+	@GET
+	@Timed
+	//@ApiOperation(response=dbse.fopj.blinktopus.api.resultmodel.User.class)
+	public Response scanLog(@QueryParam("SVid") String SVId, @QueryParam("type") String type,
+			@QueryParam("table") String table, @QueryParam("key") String key, @QueryParam("fields") List<String> fields, @QueryParam("recordCount") Integer recordCount) {
+		if (recordCount.equals(null) || recordCount<0 || key.equals(null)){
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+		return LogManager.getLogManager().scan(table, key, fields, recordCount);
+	}
+	
+		
+	/**
+	 * The method that returns relevant tuples and relevant information about the query to the user.
+	 * @param SVId The ID of a Storage View to be used to answer user's query.
+	 * @param type The type of a Storage View to be used to answer user's query (Col,Row,AQP).
+	 * @param table The table to be queried (Order/LineItem)
+	 * @return An instance of a class Result that contains information about the query (table, attr, lower, higher),
+	 * information about SV (Id, Type (Col,Row,AQP)), information about result (tuples, size), and
+	 * analytical information (time it took to retrieve the result, and error if necessary).
+	 */
+	@Path("/getAll")
+	@GET
+	@Timed
+	//@ApiOperation(response=dbse.fopj.blinktopus.api.resultmodel.User.class)
+	public Response getAll(@QueryParam("SVid") String SVId, @QueryParam("type") String type,
+			@QueryParam("table") String table) {
+		return LogManager.getLogManager().getAll(table);
+	}
 	/**
 	 * This method inserts a tuple of type User in the log. 
 	 * @param SVId The ID of a Storage View to be used to answer user's query.
@@ -154,9 +196,64 @@ public class QueryProcessor {
 	@Timed
 	public Response insertLog(@QueryParam("SVid") String SVId, @QueryParam("type") String type,
 			@QueryParam("table") String table, @QueryParam("key") String key, @QueryParam("field0") String field0, @QueryParam("field1") String field1, @QueryParam("field2") String field2, @QueryParam("field3") String field3, @QueryParam("field4") String field4, @QueryParam("field5") String field5, @QueryParam("field6") String field6, @QueryParam("field7") String field7, @QueryParam("field8") String field8, @QueryParam("field9") String field9) {
-		if (type.toLowerCase().equals("log"))
-			LogManager.getLogManager().insert(table, key, field0, field1, field2, field3, field4, field5, field6, field7, field8, field9);
-		return Response.status(Status.OK).build();
+		if (type.toLowerCase().equals("log")){
+			if (table.equals("User")){
+				return LogManager.getLogManager().insert(table, key, field0, field1, field2, field3, field4, field5, field6, field7, field8, field9);
 			}
+		}
+		return Response.status(Status.BAD_REQUEST).build();
+	}
+	/**
+	 * This method updates a tuple of type User in the log. 
+	 * @param SVId The ID of a Storage View to be used to answer user's query.
+	 * @param type The type of a Storage View to be used to answer user's query (Col,Row,AQP).
+	 * @param table The table to be queried (Order/LineItem/user)
+	 * @param key
+	 * @param field0 		
+	 * @param field1 
+	 * @param field2 
+	 * @param field3 
+	 * @param field4
+	 * @param field5
+	 * @param field6
+	 * @param field7
+	 * @param field8
+	 * @param field9
+	 * @return  status OK 
+	 */
+	@Path("/updateLog")
+	@GET
+	@Timed
+	public Response updateLog(@QueryParam("SVid") String SVId, @QueryParam("type") String type,
+			@QueryParam("table") String table, @QueryParam("key") String key, @QueryParam("field0") String field0, @QueryParam("field1") String field1, @QueryParam("field2") String field2, @QueryParam("field3") String field3, @QueryParam("field4") String field4, @QueryParam("field5") String field5, @QueryParam("field6") String field6, @QueryParam("field7") String field7, @QueryParam("field8") String field8, @QueryParam("field9") String field9) {
+		if (type.toLowerCase().equals("log")){
+			if (table.equals("User")){
+				return LogManager.getLogManager().update(table, key, field0, field1, field2, field3, field4, field5, field6, field7, field8, field9);
+			}
+		}
+		return Response.status(Status.BAD_REQUEST).build();
+	}
+	
+	/**
+	 * This method deletes a tuple of type User in the log. 
+	 * @param SVId The ID of a Storage View to be used to answer user's query.
+	 * @param type The type of a Storage View to be used to answer user's query (Col,Row,AQP).
+	 * @param table The table to be queried (Order/LineItem/user)
+	 * @param key
+	 * @return  status OK 
+	 */
+	@Path("/deleteLog")
+	@GET
+	@Timed
+	public Response deleteLog(@QueryParam("SVid") String SVId, @QueryParam("type") String type,
+			@QueryParam("table") String table, @QueryParam("key") String key) {
+		if (type.toLowerCase().equals("log")){
+			if (table.equals("User")){
+				return LogManager.getLogManager().delete(table, key);
+			}
+		}
+		return Response.status(Status.BAD_REQUEST).build();
+	}
+	
 
 }

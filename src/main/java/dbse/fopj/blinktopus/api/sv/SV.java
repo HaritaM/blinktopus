@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Abstract class to generalize Storage Views (Row,Col,AQP).
- * @author Pavlo Shevchenko (urmikl18)
+ * @author Pavlo Shevchenko (urmikl18), Harita Medimi and Gabriel Campero Durand
  *
  */
 public class SV {

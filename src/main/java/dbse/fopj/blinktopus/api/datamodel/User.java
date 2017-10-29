@@ -4,11 +4,52 @@ import org.hibernate.validator.constraints.Length;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class User extends Tuple {
-	@Length(max = 60)
-	private String key;
+public class User extends Tuple{
 	
-	@JsonProperty
+	private boolean deleted;
+	
+	@Length(max = 60)
+	private String key = null;
+	@Length(max = 60)
+	private String field0;
+	@Length(max = 60)
+	private String field1;
+	@Length(max = 60)
+	private String field2;
+	@Length(max = 60)
+	private String field3;
+	@Length(max = 60)
+	private String field4;
+	@Length(max = 60)
+	private String field5;
+	@Length(max = 60)
+	private String field6;
+	@Length(max = 60)
+	private String field7;
+	@Length(max = 60)
+	private String field8;
+	@Length(max = 60)
+	private String field9;
+
+	private Integer versionId;
+	private Long time;
+	
+	public Integer getVersionId() {
+		return versionId;
+	}
+
+	public void setVersionId(Integer versionId) {
+		this.versionId = versionId;
+	}
+
+	public Long getTime() {
+		return time;
+	}
+
+	public void setTime(Long time) {
+		this.time = time;
+	}
+
 	public String getKey() {
 		return key;
 	}
@@ -17,7 +58,6 @@ public class User extends Tuple {
 		this.key = key;
 	}
 
-	@JsonProperty
 	public String getField0() {
 		return field0;
 	}
@@ -26,7 +66,6 @@ public class User extends Tuple {
 		this.field0 = field0;
 	}
 
-	@JsonProperty
 	public String getField1() {
 		return field1;
 	}
@@ -35,7 +74,6 @@ public class User extends Tuple {
 		this.field1 = field1;
 	}
 
-	@JsonProperty
 	public String getField2() {
 		return field2;
 	}
@@ -44,7 +82,6 @@ public class User extends Tuple {
 		this.field2 = field2;
 	}
 
-	@JsonProperty
 	public String getField3() {
 		return field3;
 	}
@@ -101,31 +138,15 @@ public class User extends Tuple {
 		this.field9 = field9;
 	}
 
-	@Length(max = 60)
-	private String field0;
-	@Length(max = 60)
-	private String field1;
-	@Length(max = 60)
-	private String field2;
-	@Length(max = 60)
-	private String field3;
-	@Length(max = 60)
-	private String field4;
-	@Length(max = 60)
-	private String field5;
-	@Length(max = 60)
-	private String field6;
-	@Length(max = 60)
-	private String field7;
-	@Length(max = 60)
-	private String field8;
-	@Length(max = 60)
-	private String field9;
+	
 	
 	/**
 	 * Default constructor.
 	 */
 	public User() {
+		this.table = "User";
+		this.key = null;
+		this.deleted= false;
 	}
 	
 	/**
@@ -155,5 +176,18 @@ public class User extends Tuple {
 		this.field7 = field7;
 		this.field8 = field8;
 		this.field9 = field9;
+		this.deleted = false;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
+	}
+
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
+	}
+	
+	public void delete (){
+		this.deleted= true;
 	}
 }
