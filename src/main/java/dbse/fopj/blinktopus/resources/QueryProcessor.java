@@ -173,6 +173,18 @@ public class QueryProcessor {
 			@QueryParam("table") String table) {
 		return LogManager.getLogManager().getAll(table);
 	}
+	
+	/**
+	 * The method that loads data into the rowstore.
+	 * @return An instance of a class Result.
+	 */
+	@Path("/loadIntoRows")
+	@GET
+	@Timed
+	//@ApiOperation(response=dbse.fopj.blinktopus.api.resultmodel.User.class)
+	public Response loadIntoRows() {
+		return LogManager.getLogManager().load();
+	}
 	/**
 	 * This method inserts a tuple of type User in the log. 
 	 * @param SVId The ID of a Storage View to be used to answer user's query.
