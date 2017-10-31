@@ -360,6 +360,12 @@ public final class LogManager {
 			return hs.size();
 		}
 	}
+	public Response load(){
+		lock.lock();
+		thread.load();
+		lock.unlock();
+		return Response.ok().build();
+	}
 	
 	public Response insert(String table, String key, String field0, String field1,String field2, String field3,String field4, String field5,String field6,String field7,String field8,String field9 ){		
 		lock.lock();
@@ -376,8 +382,6 @@ public final class LogManager {
 				dataLog.add(user);
 				resp = Response.status(Status.CREATED).build();
 			}
-			//this.thread = new LoaderThread();
-			thread.load();
 		}
 		catch(Exception e){
 	        lock.unlock();
@@ -475,50 +479,50 @@ public final class LogManager {
 //	    }
 //		return resp;
 //	}
-
-	public Response scan(String table, String key, List<String> fields, Integer recordCount){
-		Response resp = Response.status(Status.NOT_FOUND).build();
-		lock.lock();
-		try{
-			if (keys.containsKey(key)){
-				Integer foundPos = keys.get(key).get(keys.get(key).size()-1).pos;
-				List<dbse.fopj.blinktopus.api.resultmodel.User> results = new ArrayList<>();
-				while(foundPos<dataLog.size()&&results.size()<recordCount){
-					if (!((User)dataLog.get(foundPos)).isDeleted()){
-						List<version> versions = keys.get(((User)dataLog.get(foundPos)).getKey());
-						Integer versionId = 0;
-						version version =  null;
-						for (int j= versions.size()-1; j>=0; j--){
-							if (versions.get(j).pos.intValue()==foundPos){
-								versionId=j;
-								version = versions.get(j);
-								break;
-							}
-						}
-						if (fields==null || fields.isEmpty()){
-							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(foundPos), versionId, version.time);
-							results.add(result);
-						}
-						else{
-							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(foundPos), fields, versionId, version.time);
-							results.add(result);
-						
-						}
-					}
-					foundPos++;
-				}
-				resp = Response.ok(results).build();	
-			}
-		}catch(Exception e){
-	        lock.unlock();
-	        return resp;
-		}
-		finally {
-	        lock.unlock();
-	    }
-		return resp;
-	}
-	
+//
+//	public Response scan(String table, String key, List<String> fields, Integer recordCount){
+//		Response resp = Response.status(Status.NOT_FOUND).build();
+//		lock.lock();
+//		try{
+//			if (keys.containsKey(key)){
+//				Integer foundPos = keys.get(key).get(keys.get(key).size()-1).pos;
+//				List<dbse.fopj.blinktopus.api.resultmodel.User> results = new ArrayList<>();
+//				while(foundPos<dataLog.size()&&results.size()<recordCount){
+//					if (!((User)dataLog.get(foundPos)).isDeleted()){
+//						List<version> versions = keys.get(((User)dataLog.get(foundPos)).getKey());
+//						Integer versionId = 0;
+//						version version =  null;
+//						for (int j= versions.size()-1; j>=0; j--){
+//							if (versions.get(j).pos.intValue()==foundPos){
+//								versionId=j;
+//								version = versions.get(j);
+//								break;
+//							}
+//						}
+//						if (fields==null || fields.isEmpty()){
+//							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(foundPos), versionId, version.time);
+//							results.add(result);
+//						}
+//						else{
+//							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(foundPos), fields, versionId, version.time);
+//							results.add(result);
+//						
+//						}
+//					}
+//					foundPos++;
+//				}
+//				resp = Response.ok(results).build();	
+//			}
+//		}catch(Exception e){
+//	        lock.unlock();
+//	        return resp;
+//		}
+//		finally {
+//	        lock.unlock();
+//	    }
+//		return resp;
+//	}
+//	
 	public Response getAll(String table){
 		Response resp = Response.status(Status.NOT_FOUND).build();
 		lock.lock();
@@ -536,7 +540,6 @@ public final class LogManager {
 							break;
 						}
 					}
-					System.out.println("datalog size"+dataLog.size());
 					dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(i), versionId, version.time);
 					results.add(result);
 				}
@@ -561,10 +564,8 @@ public final class LogManager {
 				//if maxVersion and maxTime are null we only search in the fast storage...
 				version v= keys.get(key).get(keys.get(key).size()-1);
 				Integer versionId = keys.get(key).size()-1;
-				System.out.println("here value of pos"+v.pos);
 				if (fields==null || fields.isEmpty()){
-			
-					//dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(v.pos), versionId, v.time);
+						
 					dbse.fopj.blinktopus.api.resultmodel.User result2 = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key));
 					resp = Response.ok(result2).build();	
 				
@@ -572,7 +573,7 @@ public final class LogManager {
 			
 				else{
 					
-					//dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(v.pos), fields);
+					
 					dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key), fields);
 					resp = Response.ok(result).build();	
 				}
@@ -592,54 +593,48 @@ public final class LogManager {
 		return resp;
 	}
 	
-//	public Response scan(String table, String key, List<String> fields, Integer recordCount){
-//		Response resp = Response.status(Status.NOT_FOUND).build();
-//		lock.lock();
-//		try{
-//			if (keys.containsKey(key)){
-//				
-//				Integer foundPos = keys.get(key).get(keys.get(key).size()-1).pos;
-//				List<dbse.fopj.blinktopus.api.resultmodel.User> results = new ArrayList<>();
-//				//rowStoreLoader(table);
-//				while(foundPos<dataLog.size()&&results.size()<recordCount){
-//					if (!((User)dataLog.get(foundPos)).isDeleted()){
-//						List<version> versions = keys.get(((User)dataLog.get(foundPos)).getKey());
-//						Integer versionId = 0;
-//						version version =  null;
-//						for (int j= versions.size()-1; j>=0; j--){
-//							if (versions.get(j).pos.intValue()==foundPos){
-//								versionId=j;
-//								version = versions.get(j);
-//								break;
-//							}
-//						}
-//						if (fields==null || fields.isEmpty()){
-//							 for (Entry<String,Tuple> entry : rowStore.entrySet()) {	
-//								 if (entry.getValue().equals(key)) {
-//							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(foundPos), versionId, version.time);
-//							results.add(result);
-//						}
-//						else{
-//							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(foundPos), fields, versionId, version.time);
-//							results.add(result);
-//						
-//						}
-//							 }
-//							 }
-//					}
-//					foundPos++;
-//				}
-//				resp = Response.ok(results).build();	
-//			}
-//		}catch(Exception e){
-//	        lock.unlock();
-//	        return resp;
-//		}
-//		finally {
-//	        lock.unlock();
-//	    }
-//		return resp;
-//	}
+	public Response scan(String table, String key, List<String> fields, Integer recordCount){
+		Response resp = Response.status(Status.NOT_FOUND).build();
+		lock.lock();
+		try{
+			if (keys.containsKey(key)){
+					List<dbse.fopj.blinktopus.api.resultmodel.User> results = new ArrayList<>();
+					Iterator<Entry<String,Tuple>> entryIterator = rowStore.entrySet().iterator();
+					while (entryIterator.hasNext()){
+						Entry<String,Tuple> entry = entryIterator.next();
+						if (entry.getKey().equals(key)) 
+						{
+							if (fields==null || fields.isEmpty()){
+								dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key));
+								results.add(result);
+								int counter = 1;
+								while (entryIterator.hasNext() && counter<recordCount){
+									results.add(new dbse.fopj.blinktopus.api.resultmodel.User((User)entryIterator.next().getValue()));
+									counter++;
+									}
+								}
+							else{							//dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key), fields, versionId, version.time);
+									dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key), fields);
+									results.add(result);
+									int counter = 1;
+									while (entryIterator.hasNext() && counter<recordCount){
+										results.add(new dbse.fopj.blinktopus.api.resultmodel.User((User)entryIterator.next().getValue(), fields));
+										counter++;
+								}
+							}	 
+						}
+						}
+				resp = Response.ok(results).build();	
+			}
+		}catch(Exception e){
+	        lock.unlock();
+	        return resp;
+		}
+		finally {
+	        lock.unlock();
+	    }
+		return resp;
+	}
 	
 	class LoaderThread extends Thread {
 	 
@@ -663,9 +658,8 @@ public final class LogManager {
 					{
 						String key = ((User)dataLog.get(i)).getKey();
 						rowStore.put(key, ((User)dataLog.get(i)));
-						//loadedKeys.add(key);
 						System.out.println(loadedKeys.add(key));
-					}
+					}	
 				}	
 			}catch(Exception e){
 		        lock.unlock();
@@ -678,9 +672,5 @@ public final class LogManager {
 			return;
 		}
 	}
-	//Two next steps: Change (comment out the previous functions) the read and the scan, 
-	//so they use only the rowStore. For the scan, you go through the key set. 
-	//As soon as you find the key that starts the scan, you start adding the subsequent n keys (I mean, for each of these keys you find the tuple in the row store and then you insert this in) into the results. 
-	//Finally, to be able to run a freshness test. We need a Thread that basically waits a number of seconds and then calls the rowStoreLoader function... 
-	//Then the test will be to run YCSB with different workloads, but changing the frequency of the Thread (which means, more freshness). What we expect to see is that more freshness leads to lower performance. 
+	 
 }
