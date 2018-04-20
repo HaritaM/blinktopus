@@ -21,7 +21,7 @@ import dbse.fopj.blinktopus.api.resultmodel.SVManagerResult;
 
 /**
  * Resource class that parses user's query and redirects it either to LogManager or SVManager.
- * @author Pavlo Shevchenko (urmikl18)
+ * @author Pavlo Shevchenko (urmikl18),harita medimi and Ms.c Gabriel Campero
  *
  */
 @Path("/")
@@ -184,6 +184,30 @@ public class QueryProcessor {
 	//@ApiOperation(response=dbse.fopj.blinktopus.api.resultmodel.User.class)
 	public Response loadIntoRows() {
 		return LogManager.getLogManager().load();
+	}
+	
+	/**
+	 * The method starts the background thread.
+	 * @return An instance of a class Result.
+	 */
+	@Path("/startBT")
+	@GET
+	@Timed
+	//@ApiOperation(response=dbse.fopj.blinktopus.api.resultmodel.User.class)
+	public Response startBackgroundThread() {
+		return LogManager.getLogManager().startBT();
+	}
+	
+	/**
+	 * The method starts the background thread.
+	 * @return An instance of a class Result.
+	 */
+	@Path("/resetBT")
+	@GET
+	@Timed
+	//@ApiOperation(response=dbse.fopj.blinktopus.api.resultmodel.User.class)
+	public Response resetBackgroundThread() {
+		return LogManager.getLogManager().resetBT();
 	}
 	/**
 	 * This method inserts a tuple of type User in the log. 

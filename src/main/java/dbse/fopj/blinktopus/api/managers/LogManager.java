@@ -53,17 +53,17 @@ public final class LogManager {
 	private Map<String, Tuple> rowStore = new HashMap<>();
 	private Integer lastPositionLoaded; 
 	private LoaderThread thread;
-	private double FRESHNESS_SECONDS =500;
+	private double FRESHNESS_SECONDS=10;
 	
 	//private Map<String, Integer> keys = new HashMap<>();
 	private Map<String, List<version>> keys = new HashMap<>();
 	ReentrantLock lock = new ReentrantLock();
+	ReentrantLock rowstore_lock = new ReentrantLock();
 	
 	private LogManager() {
 		this.initTime=System.nanoTime();
 		this.lastPositionLoaded=0;
 		this.thread = new LoaderThread();
-		thread.start();
 	}
 
 	/**
@@ -360,10 +360,38 @@ public final class LogManager {
 			return hs.size();
 		}
 	}
+	/*fuction is used to load the rowstore through external*/
 	public Response load(){
 		lock.lock();
-		thread.load();
-		lock.unlock();
+		try{
+			Set<String> loadedKeys = new HashSet<>();
+			System.out.println("size of datalog"+dataLog.size()+"rowStore" + rowStore.size());
+			for (int i=dataLog.size()-1; i>=lastPositionLoaded; i--){
+				if (!((User)dataLog.get(i)).isDeleted() && !loadedKeys.contains(((User)dataLog.get(i)).getKey()) )
+				{
+					String key = ((User)dataLog.get(i)).getKey();
+					rowStore.put(key, ((User)dataLog.get(i)));
+				}	
+			}	
+		}catch(Exception e){
+	        lock.unlock();
+	        return Response.serverError().build();
+		}
+		
+		finally {
+	        lock.unlock();
+	    }
+		return Response.ok().build();
+	}
+	
+	public Response startBT(){
+		thread.start();
+		return Response.ok().build();
+	}
+	public Response resetBT(){
+		thread.stop();
+		thread = new LoaderThread();
+		thread.start();
 		return Response.ok().build();
 	}
 	
@@ -447,82 +475,6 @@ public final class LogManager {
 		return resp;
 	}
 	
-//	public Response read(String table, String key, List<String> fields, Integer maxVersion, Long maxTime){
-//		Response resp = Response.status(Status.NOT_FOUND).build();
-//		lock.lock();
-//		try{
-//			if (keys.containsKey(key)){
-//				//if maxVersion and maxTime are null we only search in the fast storage...
-//				version v = keys.get(key).get(keys.get(key).size()-1);
-//				Integer versionId = keys.get(key).size()-1;
-//				if (fields==null || fields.isEmpty()){
-//					dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(v.pos), versionId, v.time);
-//					resp = Response.ok(result).build();	
-//				}
-//			
-//				else{
-//					dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(v.pos), fields, versionId, v.time);
-//					resp = Response.ok(result).build();	
-//				}
-//				//else we search in the fast storage and if it doesnt match the conditions we go to the slow storage
-//			}
-////				for(Map.Entry<String, List<version>> entry :keys.entrySet()){
-////					{      
-//					
-//			
-//		}catch(Exception e){
-//	        lock.unlock();
-//	        return resp;
-//		}
-//		finally {
-//	        lock.unlock();
-//	    }
-//		return resp;
-//	}
-//
-//	public Response scan(String table, String key, List<String> fields, Integer recordCount){
-//		Response resp = Response.status(Status.NOT_FOUND).build();
-//		lock.lock();
-//		try{
-//			if (keys.containsKey(key)){
-//				Integer foundPos = keys.get(key).get(keys.get(key).size()-1).pos;
-//				List<dbse.fopj.blinktopus.api.resultmodel.User> results = new ArrayList<>();
-//				while(foundPos<dataLog.size()&&results.size()<recordCount){
-//					if (!((User)dataLog.get(foundPos)).isDeleted()){
-//						List<version> versions = keys.get(((User)dataLog.get(foundPos)).getKey());
-//						Integer versionId = 0;
-//						version version =  null;
-//						for (int j= versions.size()-1; j>=0; j--){
-//							if (versions.get(j).pos.intValue()==foundPos){
-//								versionId=j;
-//								version = versions.get(j);
-//								break;
-//							}
-//						}
-//						if (fields==null || fields.isEmpty()){
-//							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(foundPos), versionId, version.time);
-//							results.add(result);
-//						}
-//						else{
-//							dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)dataLog.get(foundPos), fields, versionId, version.time);
-//							results.add(result);
-//						
-//						}
-//					}
-//					foundPos++;
-//				}
-//				resp = Response.ok(results).build();	
-//			}
-//		}catch(Exception e){
-//	        lock.unlock();
-//	        return resp;
-//		}
-//		finally {
-//	        lock.unlock();
-//	    }
-//		return resp;
-//	}
-//	
 	public Response getAll(String table){
 		Response resp = Response.status(Status.NOT_FOUND).build();
 		lock.lock();
@@ -557,37 +509,36 @@ public final class LogManager {
 	
 	public Response read(String table, String key, List<String> fields, Integer maxVersion, Long maxTime){
 		Response resp = Response.status(Status.NOT_FOUND).build();
-		lock.lock();
+		rowstore_lock.lock();
 		try{
 			if (keys.containsKey(key)){
 		
 				//if maxVersion and maxTime are null we only search in the fast storage...
-				version v= keys.get(key).get(keys.get(key).size()-1);
-				Integer versionId = keys.get(key).size()-1;
+			//	version v= keys.get(key).get(keys.get(key).size()-1);
+			//	Integer versionId = keys.get(key).size()-1;
 				if (fields==null || fields.isEmpty()){
 						
 					dbse.fopj.blinktopus.api.resultmodel.User result2 = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key));
 					resp = Response.ok(result2).build();	
-				
 				}
 			
 				else{
-					
-					
+										
 					dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key), fields);
 					resp = Response.ok(result).build();	
+					
 				}
 				//else we search in the fast storage and if it doesnt match the conditions we go to the slow storage
 			}
 		
 		}catch(Exception e){
-			if (lock.isHeldByCurrentThread()){
-				lock.unlock();
+			if (rowstore_lock.isHeldByCurrentThread()){
+				rowstore_lock.unlock();
 	        }
 	        return resp;
 		}
 		finally {
-			lock.unlock();
+			rowstore_lock.unlock();
 			}
 	    
 		return resp;
@@ -595,7 +546,7 @@ public final class LogManager {
 	
 	public Response scan(String table, String key, List<String> fields, Integer recordCount){
 		Response resp = Response.status(Status.NOT_FOUND).build();
-		lock.lock();
+		rowstore_lock.lock();
 		try{
 			if (keys.containsKey(key)){
 					List<dbse.fopj.blinktopus.api.resultmodel.User> results = new ArrayList<>();
@@ -613,7 +564,7 @@ public final class LogManager {
 									counter++;
 									}
 								}
-							else{							//dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key), fields, versionId, version.time);
+							else{							
 									dbse.fopj.blinktopus.api.resultmodel.User result = new dbse.fopj.blinktopus.api.resultmodel.User((User)rowStore.get(key), fields);
 									results.add(result);
 									int counter = 1;
@@ -627,11 +578,11 @@ public final class LogManager {
 				resp = Response.ok(results).build();	
 			}
 		}catch(Exception e){
-	        lock.unlock();
+			rowstore_lock.unlock();
 	        return resp;
 		}
 		finally {
-	        lock.unlock();
+			rowstore_lock.unlock();
 	    }
 		return resp;
 	}
@@ -651,22 +602,26 @@ public final class LogManager {
 			}
 		private void load () {
 			lock.lock();
+			rowstore_lock.lock();
 			try{
 				Set<String> loadedKeys = new HashSet<>();
+				System.out.println("size of datalog"+dataLog.size()+"rowStore" + rowStore.size());
 				for (int i=dataLog.size()-1; i>=lastPositionLoaded; i--){
-					if (!((User)dataLog.get(i)).isDeleted() && !loadedKeys.contains(((User)dataLog.get(i)).getKey()) )
+					if(!((User)dataLog.get(i)).isDeleted() && !loadedKeys.contains(((User)dataLog.get(i)).getKey()))
 					{
 						String key = ((User)dataLog.get(i)).getKey();
 						rowStore.put(key, ((User)dataLog.get(i)));
-						System.out.println(loadedKeys.add(key));
+						//System.out.println(loadedKeys.add(key));
 					}	
 				}	
 			}catch(Exception e){
-		        lock.unlock();
+				rowstore_lock.unlock();
+				lock.unlock();
 		        return;
 			}
 			
 			finally {
+				rowstore_lock.unlock();
 		        lock.unlock();
 		    }
 			return;
