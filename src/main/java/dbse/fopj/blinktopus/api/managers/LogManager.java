@@ -2,8 +2,13 @@ package dbse.fopj.blinktopus.api.managers;
 
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyFactorySpi;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -59,11 +64,21 @@ public final class LogManager {
 	private Map<String, List<version>> keys = new HashMap<>();
 	ReentrantLock lock = new ReentrantLock();
 	ReentrantLock rowstore_lock = new ReentrantLock();
+	private PrintWriter writer; 
 	
 	private LogManager() {
 		this.initTime=System.nanoTime();
 		this.lastPositionLoaded=0;
 		this.thread = new LoaderThread();
+		try {
+			this.writer = new PrintWriter("ourLog.csv", "UTF-8");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -372,7 +387,8 @@ public final class LogManager {
 					String key = ((User)dataLog.get(i)).getKey();
 					rowStore.put(key, ((User)dataLog.get(i)));
 				}	
-			}	
+			}
+			writer.println("ROW_STORE_UPDATE,NOKEY"+System.nanoTime());
 		}catch(Exception e){
 	        lock.unlock();
 	        return Response.serverError().build();
@@ -409,6 +425,7 @@ public final class LogManager {
 				keys.put(key, versionList);
 				dataLog.add(user);
 				resp = Response.status(Status.CREATED).build();
+				writer.println("INSERT,"+key+","+System.nanoTime());
 			}
 		}
 		catch(Exception e){
@@ -435,6 +452,7 @@ public final class LogManager {
 				keys.put(key, versionlist);
 				dataLog.add(user);
 				resp = Response.status(Status.CREATED).build();
+				writer.println("UPDATE,"+key+","+System.nanoTime());
 			}
 		}
 		catch(Exception e){
@@ -528,6 +546,7 @@ public final class LogManager {
 					resp = Response.ok(result).build();	
 					
 				}
+				writer.println("READ,"+key+","+System.nanoTime());
 				//else we search in the fast storage and if it doesnt match the conditions we go to the slow storage
 			}
 		
@@ -613,7 +632,8 @@ public final class LogManager {
 						rowStore.put(key, ((User)dataLog.get(i)));
 						//System.out.println(loadedKeys.add(key));
 					}	
-				}	
+				}
+				writer.println("ROW_STORE_UPDATE,NOKEY,"+System.nanoTime());
 			}catch(Exception e){
 				rowstore_lock.unlock();
 				lock.unlock();
