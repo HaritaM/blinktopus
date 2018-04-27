@@ -21,6 +21,7 @@ public class StalenessCalculator {
         List<String[]> updatesRSU2 = new ArrayList<>();
         List<Long> stalenesses = new ArrayList<>();
         List<Long> currency1 = new ArrayList<>();
+        List<Long> currency29 = new ArrayList<>();
         List<Long> staleness14 = new ArrayList<>();
         List<Long> obsolescence = new ArrayList<>();
         Set<String> updatedKeys1 = new HashSet<>();
@@ -87,7 +88,20 @@ public class StalenessCalculator {
                 		freshnessRate.add((float) (100*(recordCount-updatedKeys2.size())/(float)recordCount));
                 		boolean wasStale = false;
                 		currency1.add(Long.parseLong(operation[2])-RSU2);
-            			staleness14.add(Long.parseLong(operation[2])-tmaxtx);
+                		
+                		long currentCurrency = Long.parseLong(operation[2])-RSU2;
+                		long newage = 0L;
+                		for (int i=updatesRSU1.size()-1; i>0; i--){
+                			if (operation[1].equals(updatesRSU1.get(i)[1])){
+                				newage = RSU2-Long.parseLong(updatesRSU1.get(i)[2]);
+                				break;
+                			}
+                		}
+                		if (newage>0L){
+                			currentCurrency+=newage;
+                			currency29.add(currentCurrency);
+                		}
+                		staleness14.add(Long.parseLong(operation[2])-tmaxtx);
             			freshnessIndex.add(((float)tmaxtx/(float)lastTLog));
                 		for (int i=updatesRSU2.size()-1; i>0; i--){
                 			if (operation[1].equals(updatesRSU2.get(i)[1])){
@@ -187,6 +201,17 @@ public class StalenessCalculator {
             flaverage=flaverage/freshnessIndex.size();
             System.out.println("Your average freshnessIndex, from "+freshnessIndex.size()+" measurements was:"+flaverage);
             
+            
+            System.out.println("11");
+            average = 0;
+            count=0;
+            for (Long sl:currency29){
+            	average+=sl;
+            	System.out.println(count+","+sl);
+            	count++;
+            }
+            average=average/currency29.size();
+            System.out.println("Your average currency29, from "+currency29.size()+" measurements was:"+average);
 
 
         } catch (FileNotFoundException e) {
